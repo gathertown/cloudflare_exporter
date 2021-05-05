@@ -21,55 +21,73 @@ var q = common.Q
 var cfg = config.FromEnv()
 var logger = log.New(os.Stdout, cfg.Env)
 
+// metric
+var namespace = "gather_town"
+var subsystem = "cloudflare"
+
 // define custom metrics
 // https://pkg.go.dev/github.com/prometheus/client_golang@v1.10.0/prometheus#GaugeVec
 var (
 	edgeVisits = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "cloudflare_exporter_visits_sum",
-		Help: "Sum of processed events",
+		Name:      "visits_sum",
+		Namespace: namespace,
+		Subsystem: subsystem,
+		Help:      "Sum of processed events",
 	})
 
 	edgeBytes = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "cloudflare_exporter_edge_response_bytes_sum",
-		Help: "Sum of response bytes",
+		Name:      "response_bytes_sum",
+		Namespace: namespace,
+		Subsystem: subsystem,
+		Help:      "Sum of response bytes",
 	})
 
 	edgeBrowserMap = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cloudflare_exporter_edge_browser_map_page_views_sum",
-			Help: "Sum of page views per browser",
+			Name:      "browser_map_page_views_sum",
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Help:      "Sum of page views per browser",
 		},
 		[]string{"family"},
 	)
 
 	edgeCountryMapRequests = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cloudflare_exporter_country_map_requests_sum",
-			Help: "Sum of requests per country",
+			Name:      "country_map_requests_sum",
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Help:      "Sum of requests per country",
 		},
 		[]string{"country"},
 	)
 
 	edgeCountryMapBytes = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cloudflare_exporter_country_map_bytes_sum",
-			Help: "Sum of bytes per country",
+			Name:      "country_map_bytes_sum",
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Help:      "Sum of bytes per country",
 		},
 		[]string{"country"},
 	)
 
 	edgeCountryMapThreats = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cloudflare_exporter_country_map_threats_sum",
-			Help: "Sum of threats per country",
+			Name:      "country_map_threats_sum",
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Help:      "Sum of threats per country",
 		},
 		[]string{"country"},
 	)
 
 	edgeResponseStatus = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cloudflare_exporter_response_status_sum",
-			Help: "Sum of responses per status code",
+			Name:      "response_status_sum",
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Help:      "Sum of responses per status code",
 		},
 		[]string{"status"},
 	)
@@ -109,7 +127,7 @@ func recordMetrics() {
 						if err != nil {
 							logger.Info("conversion error", "error", err)
 						}
-						edgeBrowserMap.WithLabelValues(fmt.Sprintf("%v", d.EdgeResponseStatus)).Set(v1)
+						edgeResponseStatus.WithLabelValues(fmt.Sprintf("%v", d.EdgeResponseStatus)).Set(v1)
 					}
 					for _, b := range v.Sum.BrowserMap {
 						logger.Debug("BrowserMap", "browser", b.UaBrowserFamily, "views", b.PageViews)
