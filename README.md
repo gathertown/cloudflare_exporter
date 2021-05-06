@@ -26,6 +26,9 @@ make build
 ./bin/cloudflare_exporter
 ```
 
+There are two log levels, `DEBUG` and `INFO`. The `DEBUG` log level is the default.
+Set `ENV` variable to `prod` to run with `INFO` log level.
+
 ## Metrics
 
 The `SUBSYSTEM` environment variable will be used as [metrics subsystem](https://github.com/prometheus/client_golang/blob/master/prometheus/examples_test.go#L38).
