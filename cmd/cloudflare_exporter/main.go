@@ -17,6 +17,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const (
+	rfc3339 = "2006-01-02T15:04:05-0700"
+)
+
 var q = common.Q
 var cfg = config.FromEnv()
 var logger = log.New(os.Stdout, cfg.Env)
@@ -93,10 +97,37 @@ var (
 	)
 )
 
+// timeWindow will return the exact minute in time.RFC3339
+// e.g. start: 2021-05-06T09:55:00Z, end: 2021-05-06T09:56:00Z
+func timeWindow(start string, end string) (string, string, error) {
+	t := time.Now().UTC() //Get the current time
+	f := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:00-0000",
+		t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute())
+	fmt.Println(f)
+	c, err := time.Parse(rfc3339, f)
+
+	d1, err := time.ParseDuration(start)
+	if err != nil {
+		return "", "", err
+	}
+
+	d2, err := time.ParseDuration(end)
+	if err != nil {
+		return "", "", err
+	}
+
+	t1 := c.UTC().Add(d1).Format(time.RFC3339)
+	t2 := c.UTC().Add(d2).Format(time.RFC3339)
+	return t1, t2, nil
+}
+
 func recordMetrics() {
 	go func() {
 		for {
-			data, err := r.Requests(cfg.ZoneTag, cfg.Token)
+			currentMinute := time.Now().UTC().Minute()
+			t1, t2, err := timeWindow("-4m", "-3m")
+			data, err := r.Requests(cfg.ZoneTag, cfg.Token, t1, t2)
 			if err != nil {
 				panic(err)
 			}
@@ -163,10 +194,14 @@ func recordMetrics() {
 					}
 				}
 			}
-			// TODO: Use an accurate method to fetch data. We can pass using "time.Now()"
-			// We're assuming the call and data processing will take ~2s as the graphQL is not
-			// extremely responsive
-			time.Sleep(58 * time.Second)
+			for {
+				if time.Now().UTC().Minute() == currentMinute {
+					logger.Debug("Sleeping 15 seconds...", "currentMinute", currentMinute, "newMinute", time.Now().UTC().Minute())
+					break
+				}
+				logger.Debug("Sleeping 15 seconds...", "currentMinute", currentMinute)
+				time.Sleep(15 * time.Second)
+			}
 		}
 	}()
 }
