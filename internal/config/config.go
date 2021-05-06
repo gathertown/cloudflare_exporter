@@ -8,14 +8,16 @@ import (
 
 const (
 	defaultEnv     = "development"
+	defaultSub     = "gather_town"
 	defaultToken   = "a1234"
-	defaultZoneTag = "abcde"
+	defaultZoneTag = "abcd123"
 )
 
 // Config contains service information that can be changed from the
 // environment.
 type Config struct {
 	Env     string
+	Sub     string
 	Token   string
 	ZoneTag string
 }
@@ -25,12 +27,14 @@ type Config struct {
 func FromEnv() *Config {
 	var (
 		env     = getenv("ENV", defaultEnv)
+		sub     = getenv("SUBSYSTEM", defaultSub)
 		token   = getenv("TOKEN", defaultToken)
 		zoneTag = getenv("ZONETAG", defaultZoneTag)
 	)
 
 	c := &Config{
 		Env:     env,
+		Sub:     sub,
 		Token:   token,
 		ZoneTag: zoneTag,
 	}

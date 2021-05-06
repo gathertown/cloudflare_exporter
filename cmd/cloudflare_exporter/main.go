@@ -26,8 +26,8 @@ var cfg = config.FromEnv()
 var logger = log.New(os.Stdout, cfg.Env)
 
 // metric
-var namespace = "gather_town"
-var subsystem = "cloudflare"
+var namespace = "cloudflare"
+var subsystem = cfg.Sub
 
 // define custom metrics
 // https://pkg.go.dev/github.com/prometheus/client_golang@v1.10.0/prometheus#GaugeVec
@@ -104,7 +104,6 @@ func timeWindow(start string, end string) (string, string, error) {
 	f := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:00-0000",
 		t.Year(), t.Month(), t.Day(),
 		t.Hour(), t.Minute())
-	fmt.Println(f)
 	c, err := time.Parse(rfc3339, f)
 
 	d1, err := time.ParseDuration(start)
@@ -135,7 +134,6 @@ func recordMetrics() {
 			for _, k := range data {
 				// Extract HttpRequestsAdaptiveGroups data
 				for _, v := range k.HttpRequestsAdaptiveGroups {
-					logger.Debug("HttpRequestsAdaptiveGroups", "datetime", v.Dimensions.DatetimeMinute, "visits", v.Sum.Visits, "bytes", v.Sum.EdgeResponseBytes)
 					v1, err := strconv.ParseFloat(fmt.Sprintf("%v", v.Sum.Visits), 64)
 					if err != nil {
 						logger.Info("conversion error", "error", err)
@@ -152,8 +150,6 @@ func recordMetrics() {
 				// Extract HttpRequests1mGroups data
 				for _, v := range k.HttpRequests1mGroups {
 					for _, d := range v.Sum.ResponseStatusMap {
-						logger.Debug("responseStatus", "status", d.EdgeResponseStatus, "requests", d.Requests)
-
 						v1, err := strconv.ParseFloat(fmt.Sprintf("%v", d.Requests), 64)
 						if err != nil {
 							logger.Info("conversion error", "error", err)
@@ -161,8 +157,6 @@ func recordMetrics() {
 						edgeResponseStatus.WithLabelValues(fmt.Sprintf("%v", d.EdgeResponseStatus)).Set(v1)
 					}
 					for _, b := range v.Sum.BrowserMap {
-						logger.Debug("BrowserMap", "browser", b.UaBrowserFamily, "views", b.PageViews)
-
 						v1, err := strconv.ParseFloat(fmt.Sprintf("%v", b.PageViews), 64)
 						if err != nil {
 							logger.Info("conversion error", "error", err)
@@ -170,8 +164,6 @@ func recordMetrics() {
 						edgeBrowserMap.WithLabelValues(fmt.Sprintf("%v", b.UaBrowserFamily)).Set(v1)
 					}
 					for _, c := range v.Sum.CountryMap {
-						logger.Debug("CountryMap", "countryCode", c.ClientCountryName, "bytes", c.Bytes, "requests", c.Requests, "threats", c.Threats)
-
 						v1, err := strconv.ParseFloat(fmt.Sprintf("%v", c.Requests), 64)
 						if err != nil {
 							logger.Info("conversion error", "error", err)
@@ -195,11 +187,11 @@ func recordMetrics() {
 				}
 			}
 			for {
-				if time.Now().UTC().Minute() == currentMinute {
-					logger.Debug("Sleeping 15 seconds...", "currentMinute", currentMinute, "newMinute", time.Now().UTC().Minute())
+				if time.Now().UTC().Minute() != currentMinute {
+					logger.Debug("updating data", "currentMinute", currentMinute, "newMinute", time.Now().UTC().Minute())
 					break
 				}
-				logger.Debug("Sleeping 15 seconds...", "currentMinute", currentMinute)
+				logger.Debug("Sleeping 15 seconds", "currentMinute", currentMinute)
 				time.Sleep(15 * time.Second)
 			}
 		}
@@ -211,7 +203,7 @@ func main() {
 	cfg := config.FromEnv()
 	recordMetrics()
 	logger := log.New(os.Stdout, cfg.Env)
-	logger.Info("Launching cloudformation_exporter", "zoneTag", cfg.ZoneTag)
+	logger.Info("Launching cloudformation_exporter", "zoneTag", cfg.ZoneTag, "metrics subsystem", cfg.Sub)
 	http.Handle("/metrics", promhttp.Handler())
 	http.ListenAndServe(":8080", nil)
 }

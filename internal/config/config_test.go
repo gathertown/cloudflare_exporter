@@ -23,6 +23,7 @@ func unsetenv(t *testing.T, key string) {
 func TestFromEnv(t *testing.T) {
 	setenv(t, "ENV", "development")
 	setenv(t, "TOKEN", "a1234")
+	setenv(t, "SUBSYSTEM", "my_org")
 	setenv(t, "ZONETAG", "abcde")
 
 	cfg := FromEnv()
@@ -39,7 +40,12 @@ func TestFromEnv(t *testing.T) {
 		t.Errorf("FromEnv() 'ZONETAG' = %q; want %q", got, want)
 	}
 
+	if got, want := cfg.Sub, "my_org"; got != want {
+		t.Errorf("FromEnv() 'SUBSYSTEM' = %q; want %q", got, want)
+	}
+
 	unsetenv(t, "ENV")
 	unsetenv(t, "TOKEN")
-	unsetenv(t, "ZONETAG")
+	unsetenv(t, "ZONE")
+	unsetenv(t, "SUBSYSTEM")
 }

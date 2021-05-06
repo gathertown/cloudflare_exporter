@@ -2,7 +2,7 @@
 
 ## Description
 
-The project drives metrics from the [CloudFlare graphQL API](https://developers.cloudflare.com/analytics/graphql-api) to [Prometheus](https://prometheus.io/). 
+The project drives metrics from the [CloudFlare graphQL API](https://developers.cloudflare.com/analytics/graphql-api) to [Prometheus](https://prometheus.io/).
 
 The API exposes sum of metrics for a predefined time window. The time window is approximately one minute.
 
@@ -15,6 +15,7 @@ Run the app:
 ```bash
 export TOKEN="<cloudflare_token>"
 export ZONETAG="<cloudflare_zone_tag>"
+export SUBSYSTEM="<my_org>"
 make run
 ```
 
@@ -25,20 +26,22 @@ make build
 ./bin/cloudflare_exporter
 ```
 
-
-
-
-
 ## Metrics
+
+The `SUBSYSTEM` environment variable will be used as [metrics subsystem](https://github.com/prometheus/client_golang/blob/master/prometheus/examples_test.go#L38).
+Can be used to differentiate metric names for different cloudflare domain zones.
+
+The default `SUBSYSTEM` is `gather_town`. Default metric names:
 
 | name |
 |----------------------------------------------------------------------------|
-|gather_town_cloudflare_browser_map_page_views_sum{family="<browser_family>"}|
-|gather_town_cloudflare_country_map_bytes_sum{country="<country>"}           |
-|gather_town_cloudflare_country_map_requests_sum{country="<country>"}        |
-|gather_town_cloudflare_country_map_threats_sum{country="<country>"}         |
-|gather_town_cloudflare_response_bytes_sum                                   |
-|gather_town_cloudflare_response_status_sum{status="<status_code>"}          |
+|cloudflare_gather_town_browser_map_page_views_sum{family="<browser_family>"}|
+|cloudflare_gather_town_country_map_bytes_sum{country="<country>"}           |
+|cloudflare_gather_town_country_map_requests_sum{country="<country>"}        |
+|cloudflare_gather_town_country_map_threats_sum{country="<country>"}         |
+|cloudflare_gather_town_response_bytes_sum                                   |
+|cloudflare_gather_town_response_status_sum{status="<status_code>"}          |
+|cloudflare_gather_town_visits_sum                                           |
 
 All metrics are [gauges](https://prometheus.io/docs/concepts/metric_types/#gauge).
 
