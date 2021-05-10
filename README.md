@@ -48,5 +48,11 @@ The default `SUBSYSTEM` is `gather_town`. Default metric names:
 
 All metrics are [gauges](https://prometheus.io/docs/concepts/metric_types/#gauge).
 
+# ROADMAP
+
+* Add metrics from [CloudFlare browser insights](https://support.cloudflare.com/hc/en-us/articles/360033929991-Cloudflare-Browser-Insights)
+
+
 ## License
 See [Licence](LICENSE)
+
