@@ -32,11 +32,11 @@ var subsystem = cfg.Sub
 // define custom metrics
 // https://pkg.go.dev/github.com/prometheus/client_golang@v1.10.0/prometheus#GaugeVec
 var (
-	edgeVisits = promauto.NewGauge(prometheus.GaugeOpts{
-		Name:      "visits_sum",
+	edgeVisits = promauto.NewCounter(prometheus.CounterOpts{
+		Name:      "visits_count",
 		Namespace: namespace,
 		Subsystem: subsystem,
-		Help:      "Sum of processed events",
+		Help:      "Count of visits",
 	})
 
 	edgeBytes = promauto.NewGauge(prometheus.GaugeOpts{
@@ -46,22 +46,22 @@ var (
 		Help:      "Sum of response bytes",
 	})
 
-	edgeBrowserMap = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name:      "browser_map_page_views_sum",
+	edgeBrowserMap = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:      "browser_map_page_views_count",
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Help:      "Sum of page views per browser",
+			Help:      "Count of page views per browser",
 		},
 		[]string{"family"},
 	)
 
-	edgeCountryMapRequests = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name:      "country_map_requests_sum",
+	edgeCountryMapRequests = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:      "country_map_requests_count",
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Help:      "Sum of requests per country",
+			Help:      "Count of requests per country",
 		},
 		[]string{"country"},
 	)
@@ -76,22 +76,22 @@ var (
 		[]string{"country"},
 	)
 
-	edgeCountryMapThreats = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name:      "country_map_threats_sum",
+	edgeCountryMapThreats = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:      "country_map_threats_count",
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Help:      "Sum of threats per country",
+			Help:      "Count of threats per country",
 		},
 		[]string{"country"},
 	)
 
-	edgeResponseStatus = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name:      "response_status_sum",
+	edgeResponseStatus = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:      "response_status_count",
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Help:      "Sum of responses per status code",
+			Help:      "Count of responses per status code",
 		},
 		[]string{"status"},
 	)
@@ -138,7 +138,7 @@ func recordMetrics() {
 					if err != nil {
 						logger.Info("conversion error", "error", err)
 					}
-					edgeVisits.Set(v1)
+					edgeVisits.Add(v1)
 
 					v2, err := strconv.ParseFloat(fmt.Sprintf("%v", v.Sum.EdgeResponseBytes), 64)
 					if err != nil {
@@ -154,14 +154,14 @@ func recordMetrics() {
 						if err != nil {
 							logger.Info("conversion error", "error", err)
 						}
-						edgeResponseStatus.WithLabelValues(fmt.Sprintf("%v", d.EdgeResponseStatus)).Set(v1)
+						edgeResponseStatus.WithLabelValues(fmt.Sprintf("%v", d.EdgeResponseStatus)).Add(v1)
 					}
 					for _, b := range v.Sum.BrowserMap {
 						v1, err := strconv.ParseFloat(fmt.Sprintf("%v", b.PageViews), 64)
 						if err != nil {
 							logger.Info("conversion error", "error", err)
 						}
-						edgeBrowserMap.WithLabelValues(fmt.Sprintf("%v", b.UaBrowserFamily)).Set(v1)
+						edgeBrowserMap.WithLabelValues(fmt.Sprintf("%v", b.UaBrowserFamily)).Add(v1)
 					}
 					for _, c := range v.Sum.CountryMap {
 						v1, err := strconv.ParseFloat(fmt.Sprintf("%v", c.Requests), 64)
@@ -180,9 +180,9 @@ func recordMetrics() {
 						}
 
 						// set metrics
-						edgeCountryMapRequests.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Set(v1)
+						edgeCountryMapRequests.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v1)
 						edgeCountryMapBytes.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Set(v2)
-						edgeCountryMapThreats.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Set(v3)
+						edgeCountryMapThreats.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v3)
 					}
 				}
 			}
@@ -191,8 +191,8 @@ func recordMetrics() {
 					logger.Debug("updating data", "currentMinute", currentMinute, "newMinute", time.Now().UTC().Minute())
 					break
 				}
-				logger.Debug("Sleeping 15 seconds", "currentMinute", currentMinute)
-				time.Sleep(15 * time.Second)
+				logger.Debug("Sleeping 35 seconds", "currentMinute", currentMinute)
+				time.Sleep(35 * time.Second)
 			}
 		}
 	}()

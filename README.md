@@ -37,14 +37,14 @@ Can be used to differentiate metric names for different cloudflare domain zones.
 The default `SUBSYSTEM` is `gather_town`. Default metric names:
 
 | name |
-|----------------------------------------------------------------------------|
-|cloudflare_gather_town_browser_map_page_views_sum{family="<browser_family>"}|
-|cloudflare_gather_town_country_map_bytes_sum{country="<country>"}           |
-|cloudflare_gather_town_country_map_requests_sum{country="<country>"}        |
-|cloudflare_gather_town_country_map_threats_sum{country="<country>"}         |
-|cloudflare_gather_town_response_bytes_sum                                   |
-|cloudflare_gather_town_response_status_sum{status="<status_code>"}          |
-|cloudflare_gather_town_visits_sum                                           |
+|------------------------------------------------------------------------------|
+|cloudflare_gather_town_browser_map_page_views_count{family="<browser_family>"}|
+|cloudflare_gather_town_country_map_bytes_sum{country="<country>"}             |
+|cloudflare_gather_town_country_map_requests_count{country="<country>"}        |
+|cloudflare_gather_town_country_map_threats_count{country="<country>"}         |
+|cloudflare_gather_town_response_bytes_sum                                     |
+|cloudflare_gather_town_response_status_count{status="<status_code>"}          |
+|cloudflare_gather_town_visits_count                                           |
 
 All metrics are [gauges](https://prometheus.io/docs/concepts/metric_types/#gauge).
 
