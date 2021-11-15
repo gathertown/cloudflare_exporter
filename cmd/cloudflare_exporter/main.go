@@ -11,10 +11,9 @@ import (
 	common "github.com/gathertown/cloudflare_exporter/pkg"
 	r "github.com/gathertown/cloudflare_exporter/pkg/cloudflare/requests"
 	log "github.com/gathertown/cloudflare_exporter/pkg/log"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	metrics "github.com/gathertown/cloudflare_exporter/internal/metrics"
 )
 
 const (
@@ -24,78 +23,6 @@ const (
 var q = common.Q
 var cfg = config.FromEnv()
 var logger = log.New(os.Stdout, cfg.Env)
-
-// metric
-var namespace = "cloudflare"
-var subsystem = cfg.Sub
-
-// define custom metrics
-// https://pkg.go.dev/github.com/prometheus/client_golang@v1.10.0/prometheus#GaugeVec
-var (
-	edgeVisits = promauto.NewCounter(prometheus.CounterOpts{
-		Name:      "visits_count",
-		Namespace: namespace,
-		Subsystem: subsystem,
-		Help:      "Count of visits",
-	})
-
-	edgeBytes = promauto.NewGauge(prometheus.GaugeOpts{
-		Name:      "response_bytes_sum",
-		Namespace: namespace,
-		Subsystem: subsystem,
-		Help:      "Sum of response bytes",
-	})
-
-	edgeBrowserMap = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name:      "browser_map_page_views_count",
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Help:      "Count of page views per browser",
-		},
-		[]string{"family"},
-	)
-
-	edgeCountryMapRequests = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name:      "country_map_requests_count",
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Help:      "Count of requests per country",
-		},
-		[]string{"country"},
-	)
-
-	edgeCountryMapBytes = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name:      "country_map_bytes_sum",
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Help:      "Sum of bytes per country",
-		},
-		[]string{"country"},
-	)
-
-	edgeCountryMapThreats = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name:      "country_map_threats_count",
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Help:      "Count of threats per country",
-		},
-		[]string{"country"},
-	)
-
-	edgeResponseStatus = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name:      "response_status_count",
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Help:      "Count of responses per status code",
-		},
-		[]string{"status"},
-	)
-)
 
 // timeWindow will return the exact minute in time.RFC3339
 // e.g. start: 2021-05-06T09:55:00Z, end: 2021-05-06T09:56:00Z
@@ -138,13 +65,13 @@ func recordMetrics() {
 					if err != nil {
 						logger.Info("conversion error", "error", err)
 					}
-					edgeVisits.Add(v1)
+					metrics.EdgeVisits.Add(v1)
 
 					v2, err := strconv.ParseFloat(fmt.Sprintf("%v", v.Sum.EdgeResponseBytes), 64)
 					if err != nil {
 						logger.Info("conversion error", "error", err)
 					}
-					edgeBytes.Set(v2)
+					metrics.EdgeBytes.Set(v2)
 				}
 
 				// Extract HttpRequests1mGroups data
@@ -154,14 +81,14 @@ func recordMetrics() {
 						if err != nil {
 							logger.Info("conversion error", "error", err)
 						}
-						edgeResponseStatus.WithLabelValues(fmt.Sprintf("%v", d.EdgeResponseStatus)).Add(v1)
+						metrics.EdgeResponseStatus.WithLabelValues(fmt.Sprintf("%v", d.EdgeResponseStatus)).Add(v1)
 					}
 					for _, b := range v.Sum.BrowserMap {
 						v1, err := strconv.ParseFloat(fmt.Sprintf("%v", b.PageViews), 64)
 						if err != nil {
 							logger.Info("conversion error", "error", err)
 						}
-						edgeBrowserMap.WithLabelValues(fmt.Sprintf("%v", b.UaBrowserFamily)).Add(v1)
+						metrics.EdgeBrowserMap.WithLabelValues(fmt.Sprintf("%v", b.UaBrowserFamily)).Add(v1)
 					}
 					for _, c := range v.Sum.CountryMap {
 						v1, err := strconv.ParseFloat(fmt.Sprintf("%v", c.Requests), 64)
@@ -180,9 +107,9 @@ func recordMetrics() {
 						}
 
 						// set metrics
-						edgeCountryMapRequests.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v1)
-						edgeCountryMapBytes.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Set(v2)
-						edgeCountryMapThreats.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v3)
+						metrics.EdgeCountryMapRequests.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v1)
+						metrics.EdgeCountryMapBytes.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v2)
+						metrics.EdgeCountryMapThreats.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v3)
 					}
 				}
 			}
