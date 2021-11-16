@@ -77,4 +77,14 @@ var (
 		},
 		[]string{"status"},
 	)
+
+	PoolHealthStatus = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:      "pool_health_status",
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Help:      "Reports the health of a pool, 1 for healthy, 0 for unhealthy.",
+		},
+		[]string{"colo_code", "load_balancer_name", "origin_name", "steering_policy", "pool_name", "region"},
+	)
 )

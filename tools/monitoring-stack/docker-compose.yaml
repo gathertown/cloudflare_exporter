@@ -6,7 +6,7 @@ services:
     environment:
       - TOKEN=${TOKEN}
       - ZONETAG=${ZONETAG}
-      - LISTEN=:8080
+    image: ghcr.io/lablabs/cloudflare_exporter
     ports:
       - 8080:8080
   prometheus:
@@ -19,6 +19,8 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - exporter
     ports:
       - 9090:9090
     restart: always

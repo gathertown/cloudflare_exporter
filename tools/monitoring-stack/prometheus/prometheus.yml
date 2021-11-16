@@ -4,11 +4,9 @@ global:
 
 scrape_configs:
   - job_name: 'prometheus'
-    scrape_interval: 5s
     static_configs:
          - targets: ['localhost:9090']
 
   - job_name: 'cloudflare'
-    scrape_interval: 60s
     static_configs:
-         - targets: ['localhost:8080']
+         - targets: ['exporter:8080']

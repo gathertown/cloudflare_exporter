@@ -8,8 +8,8 @@ import (
 	"time"
 
 	config "github.com/gathertown/cloudflare_exporter/internal/config"
-	common "github.com/gathertown/cloudflare_exporter/pkg"
 	r "github.com/gathertown/cloudflare_exporter/pkg/cloudflare/requests"
+	t "github.com/gathertown/cloudflare_exporter/pkg/cloudflare/traffic"
 	log "github.com/gathertown/cloudflare_exporter/pkg/log"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -20,7 +20,8 @@ const (
 	rfc3339 = "2006-01-02T15:04:05-0700"
 )
 
-var q = common.Q
+var qr = r.Q
+var qt = t.Q
 var cfg = config.FromEnv()
 var logger = log.New(os.Stdout, cfg.Env)
 
@@ -53,13 +54,17 @@ func recordMetrics() {
 		for {
 			currentMinute := time.Now().UTC().Minute()
 			t1, t2, err := timeWindow("-4m", "-3m")
-			data, err := r.Requests(cfg.ZoneTag, cfg.Token, t1, t2)
+			rData, err := r.Run(cfg.ZoneTag, cfg.Token, t1, t2)
+			tData, err := t.Run(cfg.ZoneTag, cfg.Token, t1, t2, 1000)
 			if err != nil {
 				panic(err)
 			}
 
-			for _, k := range data {
-				// Extract HttpRequestsAdaptiveGroups data
+			for _, k := range tData {
+				metrics.PoolHealthStatus.WithLabelValues(k.ColoCode, k.LbName, k.OriginName, k.Policy, k.PoolName, k.Region).Set(float64(k.Healthy))
+			}
+
+			for _, k := range rData {
 				for _, v := range k.HttpRequestsAdaptiveGroups {
 					v1, err := strconv.ParseFloat(fmt.Sprintf("%v", v.Sum.Visits), 64)
 					if err != nil {
