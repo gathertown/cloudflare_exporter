@@ -71,7 +71,7 @@ func recordMetrics() {
 					if err != nil {
 						logger.Info("conversion error", "error", err)
 					}
-					metrics.EdgeBytes.Set(v2)
+					metrics.EdgeBytes.Add(v2)
 				}
 
 				// Extract HttpRequests1mGroups data
@@ -113,9 +113,11 @@ func recordMetrics() {
 					}
 				}
 			}
+
+			// Don't expose twice the same data. If we already reported this minute, wait for the next one.
 			for {
 				if time.Now().UTC().Minute() != currentMinute {
-					logger.Debug("updating data", "currentMinute", currentMinute, "newMinute", time.Now().UTC().Minute())
+					logger.Debug("Updating data", "currentMinute", currentMinute, "newMinute", time.Now().UTC().Minute())
 					break
 				}
 				logger.Debug("Sleeping 35 seconds", "currentMinute", currentMinute)

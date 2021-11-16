@@ -1,15 +1,14 @@
 # CloudFlare Exporter
 
 ## Description
-
 The project drives metrics from the [CloudFlare graphQL API](https://developers.cloudflare.com/analytics/graphql-api) to [Prometheus](https://prometheus.io/).
 
-The API exposes sum of metrics for a predefined time window. The time window is approximately one minute.
-
-Metrics need to be aggregated on CloudFlare. There are no metrics exposed for the _last minute_. The time window starts _three minutes_ back and ends _two minutes_ back.
+## CloudFlare Data Extraction
+CloudFlare graphQL API updates data every minute.
+To keep the system compliant with Prometheus logic, the exporter will aggregate data in the time window from
+_four minutes back_ to _three minutes back_.
 
 ## Develop
-
 Run the app:
 
 ```bash
@@ -29,30 +28,28 @@ make build
 There are two log levels, `DEBUG` and `INFO`. The `DEBUG` log level is the default.
 Set `ENV` variable to `prod` to run with `INFO` log level.
 
-## Metrics
+## Variables
+The `SUBSYSTEM` environment variable will be used as [metrics subsystem](https://github.com/prometheus/client_golang/blob/master/prometheus/examples_test.go#L38). The variable can be used to differentiate metric names for different CloudFlare domain zones.
+The default value is `gather_town`.
 
-The `SUBSYSTEM` environment variable will be used as [metrics subsystem](https://github.com/prometheus/client_golang/blob/master/prometheus/examples_test.go#L38).
-Can be used to differentiate metric names for different cloudflare domain zones.
-
-The default `SUBSYSTEM` is `gather_town`. Default metric names:
+## Metrics Exposed
+Default metric names:
 
 | name |
-|------------------------------------------------------------------------------|
-|cloudflare_gather_town_browser_map_page_views_count{family="<browser_family>"}|
-|cloudflare_gather_town_country_map_bytes_sum{country="<country>"}             |
-|cloudflare_gather_town_country_map_requests_count{country="<country>"}        |
-|cloudflare_gather_town_country_map_threats_count{country="<country>"}         |
-|cloudflare_gather_town_response_bytes_sum                                     |
-|cloudflare_gather_town_response_status_count{status="<status_code>"}          |
-|cloudflare_gather_town_visits_count                                           |
+|-----------------------------------------------------|
+| cloudflare_gather_town_browser_map_page_views_count |
+| cloudflare_gather_town_country_map_bytes_sum        |
+| cloudflare_gather_town_country_map_requests_count   |
+| cloudflare_gather_town_country_map_threats_count    |
+| cloudflare_gather_town_response_bytes_count         |
+| cloudflare_gather_town_response_status_count        |
+| cloudflare_gather_town_visits_count                 |
 
-All metrics are [gauges](https://prometheus.io/docs/concepts/metric_types/#gauge).
+For detailed explanation look at the metric description in the source code, Grafana or Prometheus.
 
 # ROADMAP
-
 * Add metrics from [CloudFlare browser insights](https://support.cloudflare.com/hc/en-us/articles/360033929991-Cloudflare-Browser-Insights)
 
 
 ## License
 See [Licence](LICENSE)
-

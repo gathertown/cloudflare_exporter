@@ -15,17 +15,17 @@ var subsystem = cfg.Sub
 // https://pkg.go.dev/github.com/prometheus/client_golang@v1.10.0/prometheus#GaugeVec
 var (
 	EdgeVisits = promauto.NewCounter(prometheus.CounterOpts{
-		Name:      "visits_count",
+		Name:      "external_visits_count",
 		Namespace: namespace,
 		Subsystem: subsystem,
-		Help:      "Count of visits",
+		Help:      "Counts the number of requests by end-users that were initiated from a different website (i.e. where the request HTTP Referer header does not match the host in the HTTP Host header)",
 	})
 
-	EdgeBytes = promauto.NewGauge(prometheus.GaugeOpts{
-		Name:      "response_bytes_sum",
+	EdgeBytes = promauto.NewCounter(prometheus.CounterOpts{
+		Name:      "response_bytes_count",
 		Namespace: namespace,
 		Subsystem: subsystem,
-		Help:      "Sum of response bytes",
+		Help:      "Counts the amount of data transferred from Cloudflare to end users within a certain period of time. Total bandwidth equals the sum of all EdgeResponseBytes for a certain period of time",
 	})
 
 	EdgeBrowserMap = promauto.NewCounterVec(
@@ -33,7 +33,7 @@ var (
 			Name:      "browser_map_page_views_count",
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Help:      "Count of page views per browser",
+			Help:      "Counts the successful requests for HTML",
 		},
 		[]string{"family"},
 	)
@@ -43,7 +43,7 @@ var (
 			Name:      "country_map_requests_count",
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Help:      "Count of requests per country",
+			Help:      "Counts the country from which request originated",
 		},
 		[]string{"country"},
 	)
@@ -53,7 +53,7 @@ var (
 			Name:      "country_map_bytes_count",
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Help:      "Count of bytes per country",
+			Help:      "Count of bytes returned to client per country",
 		},
 		[]string{"country"},
 	)
@@ -63,7 +63,7 @@ var (
 			Name:      "country_map_threats_count",
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Help:      "Count of threats per country",
+			Help:      "Counts requests classified as threats per country",
 		},
 		[]string{"country"},
 	)
@@ -73,7 +73,7 @@ var (
 			Name:      "response_status_count",
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Help:      "Count of responses per status code",
+			Help:      "Counts HTTP response status code returned to client",
 		},
 		[]string{"status"},
 	)

@@ -37,10 +37,8 @@ type httpRequests1mGroups []struct {
 }
 
 // NOTE:
-// "unique visitors" per colocation is not supported in httpRequestsAdaptiveGroups,
-// but the httpRequestsAdaptiveGroups API does support visits.
-// A visit is defined as a page view that originated from a different website or direct link.
-// Cloudflare checks where the HTTP referer does not match the hostname. One visit can consist of multiple page views.
+// Number "unique visitors" per colocation is not supported in httpRequestsAdaptiveGroups, but the httpRequestsAdaptiveGroups API does support visits.
+// A visit is defined as a page view that originated from a different website or direct link. Cloudflare checks where the HTTP referer does not match the hostname. One visit can consist of multiple page views.
 //
 // URL: https://developers.cloudflare.com/analytics/graphql-api/migration-guides/graphql-api-analytics
 type httpRequestsAdaptiveGroupsSum struct {
