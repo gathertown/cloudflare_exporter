@@ -18,3 +18,7 @@ build:
 
 build-image:
 	docker build -t gathertown/cloudflare_exporter:latest .
+
+dc-up:
+	docker build -f Dockerfile -t localhost/cloudflare_exporter:t1 .
+	docker-compose -f tools/monitoring-stack/docker-compose.yaml up
