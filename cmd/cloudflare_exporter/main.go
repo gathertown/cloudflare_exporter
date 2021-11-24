@@ -8,94 +8,22 @@ import (
 	"time"
 
 	config "github.com/gathertown/cloudflare_exporter/internal/config"
-	common "github.com/gathertown/cloudflare_exporter/pkg"
 	r "github.com/gathertown/cloudflare_exporter/pkg/cloudflare/requests"
+	t "github.com/gathertown/cloudflare_exporter/pkg/cloudflare/traffic"
 	log "github.com/gathertown/cloudflare_exporter/pkg/log"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	metrics "github.com/gathertown/cloudflare_exporter/internal/metrics"
 )
 
 const (
 	rfc3339 = "2006-01-02T15:04:05-0700"
 )
 
-var q = common.Q
+var qr = r.Q
+var qt = t.Q
 var cfg = config.FromEnv()
 var logger = log.New(os.Stdout, cfg.Env)
-
-// metric
-var namespace = "cloudflare"
-var subsystem = cfg.Sub
-
-// define custom metrics
-// https://pkg.go.dev/github.com/prometheus/client_golang@v1.10.0/prometheus#GaugeVec
-var (
-	edgeVisits = promauto.NewCounter(prometheus.CounterOpts{
-		Name:      "visits_count",
-		Namespace: namespace,
-		Subsystem: subsystem,
-		Help:      "Count of visits",
-	})
-
-	edgeBytes = promauto.NewGauge(prometheus.GaugeOpts{
-		Name:      "response_bytes_sum",
-		Namespace: namespace,
-		Subsystem: subsystem,
-		Help:      "Sum of response bytes",
-	})
-
-	edgeBrowserMap = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name:      "browser_map_page_views_count",
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Help:      "Count of page views per browser",
-		},
-		[]string{"family"},
-	)
-
-	edgeCountryMapRequests = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name:      "country_map_requests_count",
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Help:      "Count of requests per country",
-		},
-		[]string{"country"},
-	)
-
-	edgeCountryMapBytes = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name:      "country_map_bytes_sum",
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Help:      "Sum of bytes per country",
-		},
-		[]string{"country"},
-	)
-
-	edgeCountryMapThreats = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name:      "country_map_threats_count",
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Help:      "Count of threats per country",
-		},
-		[]string{"country"},
-	)
-
-	edgeResponseStatus = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name:      "response_status_count",
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Help:      "Count of responses per status code",
-		},
-		[]string{"status"},
-	)
-)
 
 // timeWindow will return the exact minute in time.RFC3339
 // e.g. start: 2021-05-06T09:55:00Z, end: 2021-05-06T09:56:00Z
@@ -126,25 +54,29 @@ func recordMetrics() {
 		for {
 			currentMinute := time.Now().UTC().Minute()
 			t1, t2, err := timeWindow("-4m", "-3m")
-			data, err := r.Requests(cfg.ZoneTag, cfg.Token, t1, t2)
+			rData, err := r.Run(cfg.ZoneTag, cfg.Token, t1, t2)
+			tData, err := t.Run(cfg.ZoneTag, cfg.Token, t1, t2, 1000)
 			if err != nil {
 				panic(err)
 			}
 
-			for _, k := range data {
-				// Extract HttpRequestsAdaptiveGroups data
+			for _, k := range tData {
+				metrics.PoolHealthStatus.WithLabelValues(k.ColoCode, k.LbName, k.OriginName, k.Policy, k.PoolName, k.Region).Set(float64(k.Healthy))
+			}
+
+			for _, k := range rData {
 				for _, v := range k.HttpRequestsAdaptiveGroups {
 					v1, err := strconv.ParseFloat(fmt.Sprintf("%v", v.Sum.Visits), 64)
 					if err != nil {
 						logger.Info("conversion error", "error", err)
 					}
-					edgeVisits.Add(v1)
+					metrics.EdgeVisits.Add(v1)
 
 					v2, err := strconv.ParseFloat(fmt.Sprintf("%v", v.Sum.EdgeResponseBytes), 64)
 					if err != nil {
 						logger.Info("conversion error", "error", err)
 					}
-					edgeBytes.Set(v2)
+					metrics.EdgeBytes.Add(v2)
 				}
 
 				// Extract HttpRequests1mGroups data
@@ -154,14 +86,14 @@ func recordMetrics() {
 						if err != nil {
 							logger.Info("conversion error", "error", err)
 						}
-						edgeResponseStatus.WithLabelValues(fmt.Sprintf("%v", d.EdgeResponseStatus)).Add(v1)
+						metrics.EdgeResponseStatus.WithLabelValues(fmt.Sprintf("%v", d.EdgeResponseStatus)).Add(v1)
 					}
 					for _, b := range v.Sum.BrowserMap {
 						v1, err := strconv.ParseFloat(fmt.Sprintf("%v", b.PageViews), 64)
 						if err != nil {
 							logger.Info("conversion error", "error", err)
 						}
-						edgeBrowserMap.WithLabelValues(fmt.Sprintf("%v", b.UaBrowserFamily)).Add(v1)
+						metrics.EdgeBrowserMap.WithLabelValues(fmt.Sprintf("%v", b.UaBrowserFamily)).Add(v1)
 					}
 					for _, c := range v.Sum.CountryMap {
 						v1, err := strconv.ParseFloat(fmt.Sprintf("%v", c.Requests), 64)
@@ -180,15 +112,17 @@ func recordMetrics() {
 						}
 
 						// set metrics
-						edgeCountryMapRequests.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v1)
-						edgeCountryMapBytes.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Set(v2)
-						edgeCountryMapThreats.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v3)
+						metrics.EdgeCountryMapRequests.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v1)
+						metrics.EdgeCountryMapBytes.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v2)
+						metrics.EdgeCountryMapThreats.WithLabelValues(fmt.Sprintf("%v", c.ClientCountryName)).Add(v3)
 					}
 				}
 			}
+
+			// Don't expose twice the same data. If we already reported this minute, wait for the next one.
 			for {
 				if time.Now().UTC().Minute() != currentMinute {
-					logger.Debug("updating data", "currentMinute", currentMinute, "newMinute", time.Now().UTC().Minute())
+					logger.Debug("Updating data", "currentMinute", currentMinute, "newMinute", time.Now().UTC().Minute())
 					break
 				}
 				logger.Debug("Sleeping 35 seconds", "currentMinute", currentMinute)

@@ -19,3 +19,7 @@ vendor/
 
 # editors
 *.swp
+
+# ignore data dirs
+tools/monitoring-stack/grafana/data/*
+tools/monitoring-stack/prometheus/data/*
